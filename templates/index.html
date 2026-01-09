@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minecraft Control Panel</title>
+    <style>
+        body { font-family: sans-serif; background: #111; color: #eee; }
+        input, button { padding: 6px; margin: 4px; }
+        pre { background: #222; padding: 10px; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<h2>Minecraft Console</h2>
+
+<input id="cmd" placeholder="Enter command" onkeydown="if(event.key==='Enter') sendCommand()">
+<button onclick="sendCommand()">Send</button>
+
+<pre id="console"></pre>
+
+<h2>System Stats</h2>
+<div id="stats">Loading…</div>
+
+<script>
+const consoleEl = document.getElementById("console");
+const cmdEl = document.getElementById("cmd");
+
+
+function sendCommand() {
+    const command = cmdEl.value.trim();
+    if (!command) return;
+    cmdEl.value = ""; // clear input
+
+    fetch("/api/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command })
+    })
+    .then(r => r.json())
+    .then(d => {
+        const output = d.output || d.error || "";
+        // split output into lines and append them individually
+        consoleEl.textContent += `> ${command}\n`;
+        output.split("\n").forEach(line => {
+            consoleEl.textContent += line + "\n";
+        });
+        consoleEl.scrollTop = consoleEl.scrollHeight; // auto-scroll
+    });
+}
+
+function updateStats() {
+    fetch("/api/stats")
+        .then(r => r.json())
+        .then(d => {
+            stats.innerHTML =
+                `CPU: ${d.cpu_percent}%<br>` +
+                `RAM: ${d.ram_used} / ${d.ram_total} MB (${d.ram_percent}%)`;
+        });
+}
+
+setInterval(updateStats, 1000);
+updateStats();
+</script>
+
+</body>
+</html>
